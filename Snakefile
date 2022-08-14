@@ -8,7 +8,7 @@ subjects, = glob_wildcards('freesurfer/sub-{subject}/mri/lh.hippoAmygLabels-T1.v
 rule all:
     input:
         expand('results/{method}_volumes.tsv',
-            method=['freesurfer','ashs'])
+            method=['freesurfer','ashs','hippunfold-magdeburgatlas','hippunfold-freesurferatlas','hippunfold-bigbrainatlas'])
 
 
 
@@ -42,6 +42,19 @@ rule get_subfield_vols_ashs:
         lookup_tsv='resources/desc-subfields_atlas-magdeburg_dseg.tsv'
     output:
         tsv='results/ashs/sub-{subject}_volumes.tsv'
+    script:
+        "scripts/gen_volume_tsv.py"
+
+
+rule get_subfield_vols_hippunfold:
+    """Export segmentation volume for a subject to TSV"""
+    input:
+        segs=expand(
+            'hippunfold_atlasfix/hippunfold/sub-{subject}/anat/sub-{subject}_hemi-{hemi}_space-cropT1w_desc-subfields_atlas-{atlas}_dseg.nii.gz',
+                hemi=['L','R'], allow_missing=True),
+        lookup_tsv='resources/hippunfold_desc-subfields_atlas-{atlas}_dseg.tsv'
+    output:
+        tsv='results/hippunfold-{atlas}atlas/sub-{subject}_volumes.tsv'
     script:
         "scripts/gen_volume_tsv.py"
 
