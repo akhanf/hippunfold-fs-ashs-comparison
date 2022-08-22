@@ -22,6 +22,12 @@ rule mgz_to_nii:
     shell: 
         'mri_convert {input} {output}'
 
+rule all_fs_registered:
+    input:
+        segs=expand(
+            'freesurfer/sub-{subject}/mri/{hemi}.hippoAmygLabels-T2.v21.CA.space-T2w.nii.gz',
+                hemi=['lh','rh'], subject=subjects,allow_missing=True),
+ 
 
 rule get_subfield_vols_fs:
     """Export segmentation volume for a subject to TSV"""
@@ -75,8 +81,27 @@ rule get_subfield_vols_hippunfold_t2:
 
 
 
+#get FS segmentation back into the space of the highresT2 (for comparing to others)
+# need to apply the inverse of the T1_to_T2.lta 
+rule convert_xfm_lta_itk:
+    input:
+        lta = '/home/ROBARTS/alik/graham/scratch/3_processing/hippunfold_HCA100/freesurfer_highresT2/hca100_freesurfer/freesurfer/sub-{subject}/mri/transforms/T1_to_T2.v21.lta',
+#        lta = 'freesurfer/sub-{subject}/mri/transforms/T1_to_T2.v21.lta',
+    output:
+        itk = 'freesurfer/sub-{subject}/mri/transforms/T1_to_T2.v21.itk.txt'
+    shell:
+        'lta_convert --inlta {input.lta} --outitk {output.itk}'
 
-
+rule transform_fs_to_t2:
+    input:
+        itk = 'freesurfer/sub-{subject}/mri/transforms/T1_to_T2.v21.itk.txt',
+        seg = 'freesurfer/sub-{subject}/mri/{hemi}.hippoAmygLabels-T2.v21.CA.nii.gz',
+        ref = 'hippunfold_highresT2/hippunfold/sub-{subject}/anat/sub-{subject}_desc-preproc_T2w.nii.gz'
+    output:
+        seg = 'freesurfer/sub-{subject}/mri/{hemi}.hippoAmygLabels-T2.v21.CA.space-T2w.nii.gz'
+    shell:
+        'antsApplyTransforms -i {input.seg} -r {input.ref} -t {input.itk} -o {output.seg} -n NearestNeighbor'
+        
 
 rule concat_subj_vols_tsv:
     """Concatenate all subject tsv files into a single tsv"""
@@ -89,3 +114,6 @@ rule concat_subj_vols_tsv:
         pd.concat([pd.read_table(in_tsv) for in_tsv in input]).to_csv(
             output.tsv, sep="\t", index=False
         )
+
+
+
