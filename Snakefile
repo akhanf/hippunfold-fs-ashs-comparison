@@ -28,6 +28,12 @@ rule all_fs_registered:
             'freesurfer/sub-{subject}/mri/{hemi}.hippoAmygLabels-T2.v21.CA.space-T2w.nii.gz',
                 hemi=['lh','rh'], subject=subjects,allow_missing=True),
  
+rule all_hippunfold_t1_t2_registered:
+    input:
+        segs=expand(
+            'hippunfold_atlasfix/hippunfold/sub-{subject}/anat/sub-{subject}_hemi-{hemi}_space-cropT2w_desc-subfields_atlas-{atlas}_dseg.nii.gz',
+                hemi=['L','R'], atlas='bigbrain',subject=subjects,allow_missing=True),
+ 
 
 rule get_subfield_vols_fs:
     """Export segmentation volume for a subject to TSV"""
@@ -101,6 +107,18 @@ rule transform_fs_to_t2:
         seg = 'freesurfer/sub-{subject}/mri/{hemi}.hippoAmygLabels-T2.v21.CA.space-T2w.nii.gz'
     shell:
         'antsApplyTransforms -i {input.seg} -r {input.ref} -t {input.itk} -o {output.seg} -n NearestNeighbor'
+
+
+rule transform_hippunfold_t1_to_t2:
+    input:
+        seg = 'hippunfold_atlasfix/hippunfold/sub-{subject}/anat/sub-{subject}_hemi-{hemi}_space-cropT1w_desc-subfields_atlas-{atlas}_dseg.nii.gz',
+        t2_to_t1_xfm = 'hippunfold_highresT2/work/sub-{subject}/warps/sub-{subject}_desc-rigid_from-T2w_to-T1w_type-itk_xfm.txt',
+        ref = 'hippunfold_highresT2/hippunfold/sub-{subject}/anat/sub-{subject}_hemi-{hemi}_space-cropT2w_desc-subfields_atlas-{atlas}_dseg.nii.gz',
+    output:
+        seg = 'hippunfold_atlasfix/hippunfold/sub-{subject}/anat/sub-{subject}_hemi-{hemi}_space-cropT2w_desc-subfields_atlas-{atlas}_dseg.nii.gz',
+    shell:
+        'antsApplyTransforms -i {input.seg} -r {input.ref} -t [{input.t2_to_t1_xfm},1] -o {output.seg} -n NearestNeighbor'
+    
         
 
 rule concat_subj_vols_tsv:
