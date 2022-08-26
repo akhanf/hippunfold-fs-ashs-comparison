@@ -16,17 +16,17 @@ rule all:
 
 rule mgz_to_nii:
     input:
-        'freesurfer/sub-{subject}/mri/{hemi}.hippoAmygLabels-T2.v21.CA.mgz'
+        'freesurfer/sub-{subject}/mri/{hemi}.hippoAmygLabels-T2.{version}.mgz'
     output:
-        'freesurfer/sub-{subject}/mri/{hemi}.hippoAmygLabels-T2.v21.CA.nii.gz'
+        'freesurfer/sub-{subject}/mri/{hemi}.hippoAmygLabels-T2.{version}.nii.gz'
     shell: 
         'mri_convert {input} {output}'
 
 rule all_fs_registered:
     input:
         segs=expand(
-            'freesurfer/sub-{subject}/mri/{hemi}.hippoAmygLabels-T2.v21.CA.space-T2w.nii.gz',
-                hemi=['lh','rh'], subject=subjects,allow_missing=True),
+            'freesurfer/sub-{subject}/mri/{hemi}.hippoAmygLabels-T2.{version}.space-T2w.nii.gz',
+                hemi=['lh','rh'], version=['v21.FS60','v21.CA'],subject=subjects,allow_missing=True),
  
 rule all_hippunfold_t1_t2_registered:
     input:
@@ -101,10 +101,10 @@ rule convert_xfm_lta_itk:
 rule transform_fs_to_t2:
     input:
         itk = 'freesurfer/sub-{subject}/mri/transforms/T1_to_T2.v21.itk.txt',
-        seg = 'freesurfer/sub-{subject}/mri/{hemi}.hippoAmygLabels-T2.v21.CA.nii.gz',
+        seg = 'freesurfer/sub-{subject}/mri/{hemi}.hippoAmygLabels-T2.{version}.nii.gz',
         ref = 'hippunfold_highresT2/hippunfold/sub-{subject}/anat/sub-{subject}_desc-preproc_T2w.nii.gz'
     output:
-        seg = 'freesurfer/sub-{subject}/mri/{hemi}.hippoAmygLabels-T2.v21.CA.space-T2w.nii.gz'
+        seg = 'freesurfer/sub-{subject}/mri/{hemi}.hippoAmygLabels-T2.{version}.space-T2w.nii.gz'
     shell:
         'antsApplyTransforms -i {input.seg} -r {input.ref} -t {input.itk} -o {output.seg} -n NearestNeighbor'
 
